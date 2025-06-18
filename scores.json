@@ -1,0 +1,22 @@
+[
+    {
+        "student_id": "1",
+        "subject": "py",
+        "score": 60.0
+    },
+    {
+        "student_id": "2",
+        "subject": "c",
+        "score": 60.0
+    },
+    {
+        "student_id": "1",
+        "subject": "c",
+        "score": 70.0
+    },
+    {
+        "student_id": "2",
+        "subject": "py",
+        "score": 80.0
+    }
+]
