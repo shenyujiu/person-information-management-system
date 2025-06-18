@@ -1,6 +1,8 @@
 import sqlite3
 from tkinter import *
 from tkinter import ttk, messagebox
+import json
+import csv
 
 
 class LoginWindow:
@@ -9,7 +11,7 @@ class LoginWindow:
         self.root.title("登录界面")
         self.setup_db()
         self.create_login_ui()
-    
+
     def setup_db(self):
         self.conn = sqlite3.connect('users.db')
         self.c = self.conn.cursor()
@@ -30,10 +32,15 @@ class LoginWindow:
         Label(self.root, text="密码:").grid(row=1, column=0)
         self.password_entry = Entry(self.root, show="*")
         self.password_entry.grid(row=1, column=1)
-        
+
         # 登录和注册按钮
-        Button(self.root, text="登录", command=self.login).grid(row=2, column=0, columnspan=2)
-        Button(self.root, text="注册（按一下就注册）", command=self.register).grid(row=3, column=0, columnspan=2)
+        Button(self.root, text="登录", command=self.login).grid(row=2, column=0)
+        Button(self.root, text="注册（按一下就注册）", command=self.register).grid(row=2, column=1)
+
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_rowconfigure(1, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_columnconfigure(1, weight=1)
 
     def login(self):
         username = self.username_entry.get()
@@ -93,11 +100,11 @@ class InfoSystem:
         self.root.title("个人信息及成绩管理系统")
         self.setup_db()
         self.create_ui()
-        
+
     def setup_db(self):
         self.conn = sqlite3.connect('person_info.db')
         self.cursor = self.conn.cursor()
-        
+
         # 人员表
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS persons (
@@ -108,7 +115,7 @@ class InfoSystem:
                 email TEXT
             )
         ''')
-        
+
         # 成绩表
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS scores (
@@ -123,16 +130,34 @@ class InfoSystem:
 
     def create_ui(self):
         self.notebook = ttk.Notebook(self.root)
-        
+
         self.person_frame = Frame(self.notebook)
         self.create_person_ui()
-        
+
         self.score_frame = Frame(self.notebook)
         self.create_score_ui()
-        
+
         self.notebook.add(self.person_frame, text="个人信息")
         self.notebook.add(self.score_frame, text="成绩管理")
-        self.notebook.pack(expand=1, fill="both")
+        self.notebook.grid(row=0, column=0, columnspan=2, sticky="nsew")
+
+        # 个人信息数据导入导出按钮
+        Button(self.person_frame, text="导入个人信息 (JSON)", command=lambda: self.import_persons('json')).grid(row=8, column=0, padx=5, pady=5)
+        Button(self.person_frame, text="导入个人信息 (CSV)", command=lambda: self.import_persons('csv')).grid(row=8, column=1, padx=5, pady=5)
+        Button(self.person_frame, text="导出个人信息 (JSON)", command=lambda: self.export_persons('json')).grid(row=9, column=0, padx=5, pady=5)
+        Button(self.person_frame, text="导出个人信息 (CSV)", command=lambda: self.export_persons('csv')).grid(row=9, column=1, padx=5, pady=5)
+
+        # 成绩数据导入导出按钮
+        Button(self.score_frame, text="导入成绩 (JSON)", command=lambda: self.import_scores('json')).grid(row=6, column=0, padx=5, pady=5)
+        Button(self.score_frame, text="导入成绩 (CSV)", command=lambda: self.import_scores('csv')).grid(row=6, column=1, padx=5, pady=5)
+        Button(self.score_frame, text="导出成绩 (JSON)", command=lambda: self.export_scores('json')).grid(row=7, column=0, padx=5, pady=5)
+        Button(self.score_frame, text="导出成绩 (CSV)", command=lambda: self.export_scores('csv')).grid(row=7, column=1, padx=5, pady=5)
+
+        # 配置网格布局，使单元格可以根据窗口大小自动调整
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_rowconfigure(1, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_columnconfigure(1, weight=1)
 
     def create_person_ui(self):
         # 个人信息输入区域
@@ -162,6 +187,14 @@ class InfoSystem:
         Button(self.person_frame, text="更新", command=self.update_person).grid(row=6, column=0)
         Button(self.person_frame, text="删除", command=self.delete_person).grid(row=6, column=1)
 
+        self.person_frame.grid_rowconfigure(0, weight=1)
+        self.person_frame.grid_rowconfigure(1, weight=1)
+        self.person_frame.grid_rowconfigure(2, weight=1)
+        self.person_frame.grid_rowconfigure(3, weight=1)
+        self.person_frame.grid_rowconfigure(4, weight=1)
+        self.person_frame.grid_columnconfigure(0, weight=1)
+        self.person_frame.grid_columnconfigure(1, weight=1)
+
         # 个人信息显示区域
         self.person_tree = ttk.Treeview(self.person_frame, columns=("学号", "姓名", "性别", "电话", "邮箱"), show="headings")
         self.person_tree.grid(row=7, column=0, columnspan=2)
@@ -188,6 +221,12 @@ class InfoSystem:
         Button(self.score_frame, text="更新成绩", command=self.update_scores).grid(row=4, column=0)
         Button(self.score_frame, text="删除成绩", command=self.delete_score).grid(row=4, column=1)
 
+        self.score_frame.grid_rowconfigure(0, weight=1)
+        self.score_frame.grid_rowconfigure(1, weight=1)
+        self.score_frame.grid_rowconfigure(2, weight=1)
+        self.score_frame.grid_columnconfigure(0, weight=1)
+        self.score_frame.grid_columnconfigure(1, weight=1)
+
         # 成绩显示区域
         self.score_tree = ttk.Treeview(self.score_frame, columns=("学号", "科目", "分数"), show="headings")
         self.score_tree.grid(row=5, column=0, columnspan=2)
@@ -206,7 +245,7 @@ class InfoSystem:
             return
         self.cursor.execute(
             "INSERT INTO persons (id, name, gender, phone, email) VALUES (?, ?, ?, ?, ?)",
-            (id,name, self.gender_entry.get(), self.phone_entry.get(), self.email_entry.get()))
+            (id, name, self.gender_entry.get(), self.phone_entry.get(), self.email_entry.get()))
         self.conn.commit()
         messagebox.showinfo("成功", "个人信息添加成功")
         self.clear_person_entries()
@@ -302,7 +341,7 @@ class InfoSystem:
         self.cursor.execute(query, params)
         for row in self.cursor.fetchall():
             self.score_tree.insert("", END, values=row)
-    
+
     def update_scores(self):
         student_id = self.student_id_entry.get()
         if not student_id:
@@ -331,7 +370,6 @@ class InfoSystem:
         self.clear_score_entries()
         self.search_scores()
 
-
     def delete_score(self):
         selected = self.score_tree.selection()
         if not selected:
@@ -356,10 +394,90 @@ class InfoSystem:
         self.subject_entry.delete(0, END)
         self.score_entry.delete(0, END)
 
-    def __del__(self):
-        self.conn.close()
+    def import_persons(self, file_type):
+        try:
+            if file_type == 'json':
+                with open('persons.json', 'r', encoding='utf-8') as f:
+                    persons = json.load(f)
+                for person in persons:
+                    self.cursor.execute(
+                        "INSERT OR IGNORE INTO persons (id, name, gender, phone, email) VALUES (?, ?, ?, ?, ?)",
+                        (person['id'], person['name'], person.get('gender'), person.get('phone'), person.get('email')))
+            elif file_type == 'csv':
+                with open('persons.csv', 'r', encoding='utf-8', newline='') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        self.cursor.execute(
+                            "INSERT OR IGNORE INTO persons (id, name, gender, phone, email) VALUES (?, ?, ?, ?, ?)",
+                            (row['id'], row['name'], row.get('gender'), row.get('phone'), row.get('email')))
+            self.conn.commit()
+            messagebox.showinfo("成功", "个人信息导入成功")
+            self.search_persons()
+        except Exception as e:
+            messagebox.showerror("错误", f"导入个人信息时发生错误: {e}")
+
+    def export_persons(self, file_type):
+        try:
+            self.cursor.execute("SELECT * FROM persons")
+            persons = self.cursor.fetchall()
+            if file_type == 'json':
+                data = [{'id': row[0], 'name': row[1], 'gender': row[2], 'phone': row[3], 'email': row[4]} for row in
+                        persons]
+                with open('persons.json', 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+            elif file_type == 'csv':
+                with open('persons.csv', 'w', encoding='utf-8', newline='') as f:
+                    writer = csv.DictWriter(f, fieldnames=['id', 'name', 'gender', 'phone', 'email'])
+                    writer.writeheader()
+                    for row in persons:
+                        writer.writerow(
+                            {'id': row[0], 'name': row[1], 'gender': row[2], 'phone': row[3], 'email': row[4]})
+            messagebox.showinfo("成功", "个人信息导出成功")
+        except Exception as e:
+            messagebox.showerror("错误", f"导出个人信息时发生错误: {e}")
+
+    def import_scores(self, file_type):
+        try:
+            if file_type == 'json':
+                with open('scores.json', 'r', encoding='utf-8') as f:
+                    scores = json.load(f)
+                for score in scores:
+                    self.cursor.execute(
+                        "INSERT OR IGNORE INTO scores (student_id, subject, score) VALUES (?, ?, ?)",
+                        (score['student_id'], score['subject'], score['score']))
+            elif file_type == 'csv':
+                with open('scores.csv', 'r', encoding='utf-8', newline='') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        self.cursor.execute(
+                            "INSERT OR IGNORE INTO scores (student_id, subject, score) VALUES (?, ?, ?)",
+                            (row['student_id'], row['subject'], float(row['score'])))
+            self.conn.commit()
+            messagebox.showinfo("成功", "成绩导入成功")
+            self.search_scores()
+        except Exception as e:
+            messagebox.showerror("错误", f"导入成绩时发生错误: {e}")
+
+    def export_scores(self, file_type):
+        try:
+            self.cursor.execute("SELECT * FROM scores")
+            scores = self.cursor.fetchall()
+            if file_type == 'json':
+                data = [{'student_id': row[0], 'subject': row[1], 'score': row[2]} for row in scores]
+                with open('scores.json', 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+            elif file_type == 'csv':
+                with open('scores.csv', 'w', encoding='utf-8', newline='') as f:
+                    writer = csv.DictWriter(f, fieldnames=['student_id', 'subject', 'score'])
+                    writer.writeheader()
+                    for row in scores:
+                        writer.writerow({'student_id': row[0], 'subject': row[1], 'score': row[2]})
+                messagebox.showinfo("成功", "成绩导出成功")
+        except Exception as e:
+            messagebox.showerror("错误", f"导出成绩时发生错误: {e}")
+
 
 if __name__ == "__main__":
     root = Tk()
-    login_app = LoginWindow(root)
+    app = LoginWindow(root)
     root.mainloop()
